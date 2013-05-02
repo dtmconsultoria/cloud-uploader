@@ -55,11 +55,15 @@ function FileInfo(file, host) {
   this.url = this.delete_url = baseUrl + encodeURIComponent(this.name);
 }
 
-function setDefaultHeaders(response) {
-  response.setHeader(
-    'Access-Control-Allow-Origin',
-    app.get('access-control').allowOrigin
-  );
+function setDefaultHeaders(request, response) {
+  var origin = request.get('origin');
+  var allowedOrigins = app.get('access-control').allowOrigin.split(',');
+
+  allowedOrigins.forEach(function(element, index, array) {
+    if(element === origin) {
+      response.setHeader('Access-Control-Allow-Origin', origin);
+    }
+  });
 
   response.setHeader(
     'Access-Control-Allow-Methods',
@@ -81,7 +85,7 @@ function handleResult(request, response, result, redirect) {
     response.redirect(redirectURL)
   } else {
     log('Returning content ' + jsonResult)
-    setDefaultHeaders(response);
+    setDefaultHeaders(request, response);
 
     response.set('Content-Type', contentTypeFor(request));
     response.send(jsonResult);
@@ -120,7 +124,7 @@ app.configure('production', function(){
 // Routes
 
 app.get('/status', function(request, response) {
-  setDefaultHeaders(response);
+  setDefaultHeaders(request, response);
 
   if (request.query.file) {
     db.exists(request.query.file, function (error, redis_response) {
@@ -136,7 +140,7 @@ app.get('/status', function(request, response) {
 });
 
 app.options('/upload', function (request, response) {
-  setDefaultHeaders(response);
+  setDefaultHeaders(request, response);
   response.end();
 });
 
